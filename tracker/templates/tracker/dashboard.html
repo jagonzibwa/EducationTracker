@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Education Tracker{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+    <p class="text-gray-600 mt-1">Welcome, {{ user.get_full_name|default:user.username }}!</p>
+</div>
+
+{% if user.profile.role == 'admin' or user.profile.role == 'sysadmin' %}
+<!-- Admin Dashboard -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white rounded-lg shadow p-6">
+        <p class="text-sm text-gray-500">Total Students</p>
+        <p class="text-3xl font-bold text-gray-900">{{ total_students }}</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6">
+        <p class="text-sm text-gray-500">Total Classes</p>
+        <p class="text-3xl font-bold text-gray-900">{{ total_classes }}</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6">
+        <p class="text-sm text-gray-500">Total Teachers</p>
+        <p class="text-3xl font-bold text-gray-900">{{ total_teachers }}</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6">
+        <p class="text-sm text-gray-500">Today's Attendance</p>
+        <p class="text-3xl font-bold {% if attendance_pct >= 80 %}text-green-600{% elif attendance_pct >= 60 %}text-yellow-600{% else %}text-red-600{% endif %}">
+            {{ attendance_pct }}%
+        </p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Today's Attendance Summary -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Today's Attendance Summary</h2>
+        {% if today_total > 0 %}
+        <div class="space-y-3">
+            <div class="flex justify-between items-center">
+                <span class="text-gray-600">Present</span>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">{{ today_present }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-gray-600">Absent</span>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">{{ today_absent }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-gray-600">Late</span>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">{{ today_late }}</span>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-gray-500">No attendance recorded yet today.</p>
+        {% endif %}
+    </div>
+
+    <!-- Recent Notifications -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Recent SMS Notifications</h2>
+        {% if recent_notifications %}
+        <ul class="divide-y divide-gray-200">
+            {% for notif in recent_notifications %}
+            <li class="py-3">
+                <p class="text-sm text-gray-900">{{ notif.student }}</p>
+                <p class="text-xs text-gray-500">{{ notif.sent_at|date:"M j, Y g:i A" }} - {{ notif.parent_phone }}</p>
+            </li>
+            {% endfor %}
+        </ul>
+        <a href="{% url 'notification_log' %}" class="text-indigo-600 hover:text-indigo-800 text-sm mt-3 inline-block">View all notifications &rarr;</a>
+        {% else %}
+        <p class="text-gray-500">No notifications sent yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="mt-6 bg-white rounded-lg shadow p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+    <div class="flex flex-wrap gap-3">
+        <a href="{% url 'class_create' %}" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 text-sm">Add Class</a>
+        <a href="{% url 'student_create' %}" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 text-sm">Add Student</a>
+        <a href="{% url 'user_create' %}" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 text-sm">Add User</a>
+        <a href="{% url 'report' %}" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 text-sm">Attendance Reports</a>
+        <a href="{% url 'grade_report' %}" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 text-sm">Grade Reports</a>
+    </div>
+</div>
+
+{% else %}
+<!-- Teacher Dashboard -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <div class="bg-white rounded-lg shadow p-6">
+        <p class="text-sm text-gray-500">My Classes</p>
+        <p class="text-3xl font-bold text-gray-900">{{ my_classes.count }}</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6">
+        <p class="text-sm text-gray-500">My Students</p>
+        <p class="text-3xl font-bold text-gray-900">{{ my_student_count }}</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6">
+        <p class="text-sm text-gray-500">Today's Attendance</p>
+        <p class="text-3xl font-bold {% if attendance_pct >= 80 %}text-green-600{% elif attendance_pct >= 60 %}text-yellow-600{% else %}text-red-600{% endif %}">
+            {{ attendance_pct }}%
+        </p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- My Classes -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">My Classes</h2>
+        {% if my_classes %}
+        <ul class="divide-y divide-gray-200">
+            {% for class in my_classes %}
+            <li class="py-3 flex justify-between items-center">
+                <span class="text-gray-900 font-medium">{{ class.name }}</span>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-gray-500">{{ class.students.count }} students</span>
+                    <a href="{% url 'attendance_record' %}?class_id={{ class.id }}" class="bg-indigo-600 text-white px-3 py-1 rounded text-xs hover:bg-indigo-700">
+                        Take Attendance
+                    </a>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-gray-500">No classes assigned yet. Contact an administrator.</p>
+        {% endif %}
+    </div>
+
+    <!-- Today's Summary -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Today's Attendance Summary</h2>
+        {% if today_total > 0 %}
+        <div class="space-y-3">
+            <div class="flex justify-between items-center">
+                <span class="text-gray-600">Present</span>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">{{ today_present }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-gray-600">Absent</span>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">{{ today_absent }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-gray-600">Late</span>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">{{ today_late }}</span>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-gray-500">No attendance recorded yet today.</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

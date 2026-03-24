@@ -1,0 +1,7 @@
+Django==5.2.8
+django-crispy-forms==2.5
+crispy-bootstrap5==2025.6
+africastalking==2.0.2
+gunicorn==23.0.0
+whitenoise==6.8.2
+psycopg2-binary==2.9.10

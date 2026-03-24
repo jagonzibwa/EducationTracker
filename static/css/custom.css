@@ -1,0 +1,12 @@
+/* Custom styles for Education Tracker */
+/* Most styling is handled by Tailwind CSS via CDN */
+
+/* Ensure radio buttons are visible */
+input[type="radio"] {
+    cursor: pointer;
+}
+
+/* Table row hover effect */
+tbody tr:hover {
+    background-color: #f9fafb;
+}

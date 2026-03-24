@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Education Tracker{% endblock %}
+
+{% block content %}
+<div class="min-h-[70vh] flex items-center justify-center">
+    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-900">Education Tracker</h1>
+            <p class="text-gray-600 mt-1">Sign in to your account</p>
+        </div>
+
+        {% if form.errors %}
+        <div class="bg-red-100 text-red-800 border border-red-200 rounded-md p-3 mb-4 text-sm">
+            Invalid username or password. Please try again.
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="space-y-4">
+                <div>
+                    <label for="id_username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <input type="text" name="username" id="id_username" required autofocus
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label for="id_password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" name="password" id="id_password" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 font-medium">
+                    Sign In
+                </button>
+            </div>
+        </form>
+
+        <p class="mt-4 text-center text-sm text-gray-600">
+            Don't have an account?
+            <a href="{% url 'register' %}" class="text-indigo-600 hover:text-indigo-800 font-medium">Register here</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

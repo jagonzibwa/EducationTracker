@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Grade Reports - Education Tracker{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">Grade Reports</h1>
+</div>
+
+<!-- Filters -->
+<div class="bg-white rounded-lg shadow p-4 mb-6">
+    <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Class</label>
+            <select name="class_id" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="">All Classes</option>
+                {% for class in classes %}
+                <option value="{{ class.id }}" {% if class_filter == class.id|stringformat:"d" %}selected{% endif %}>{{ class.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Term</label>
+            <select name="term" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="">All Terms</option>
+                {% for value, label in term_choices %}
+                <option value="{{ value }}" {% if term_filter == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+            <input type="text" name="subject" value="{{ subject_filter }}" placeholder="Filter by subject"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div class="flex items-end gap-2">
+            <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Filter</button>
+            <a href="{% url 'grade_report' %}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">Clear</a>
+        </div>
+    </form>
+</div>
+
+<!-- Overall Summary -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <div class="bg-white rounded-lg shadow p-6">
+        <p class="text-sm text-gray-500">Total Grade Records</p>
+        <p class="text-3xl font-bold text-gray-900">{{ overall.total_grades }}</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6">
+        <p class="text-sm text-gray-500">Average Score</p>
+        <p class="text-3xl font-bold {% if overall.avg_score >= 80 %}text-green-600{% elif overall.avg_score >= 60 %}text-yellow-600{% else %}text-red-600{% endif %}">
+            {{ overall.avg_score }}%
+        </p>
+    </div>
+</div>
+
+<!-- Per-Student Grade Summary -->
+<div class="bg-white rounded-lg shadow overflow-hidden">
+    <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Grades</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avg Score</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Highest</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lowest</th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+            {% for stat in student_stats %}
+            <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 text-sm text-gray-900">{{ stat.student__first_name }} {{ stat.student__last_name }}</td>
+                <td class="px-6 py-4 text-sm text-gray-500">{{ stat.student__school_class__name }}</td>
+                <td class="px-6 py-4 text-sm text-gray-900">{{ stat.total_grades }}</td>
+                <td class="px-6 py-4 text-sm font-medium
+                    {% if stat.avg_score >= 80 %}text-green-600{% elif stat.avg_score >= 60 %}text-yellow-600{% else %}text-red-600{% endif %}">
+                    {{ stat.avg_score }}%
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-900">{{ stat.max_score }}%</td>
+                <td class="px-6 py-4 text-sm text-gray-900">{{ stat.min_score }}%</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="px-6 py-4 text-center text-gray-500">No grade records found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

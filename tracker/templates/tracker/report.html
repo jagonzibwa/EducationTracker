@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - Education Tracker{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold text-gray-900 mb-6">Attendance Reports</h1>
+
+<!-- Filters -->
+<div class="bg-white rounded-lg shadow p-4 mb-6">
+    <form method="get" class="flex flex-wrap gap-4 items-end">
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">Class</label>
+            <select name="class_id" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="">All Classes</option>
+                {% for cls in classes %}
+                <option value="{{ cls.id }}" {% if class_filter == cls.id|stringformat:"d" %}selected{% endif %}>{{ cls.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">From</label>
+            <input type="date" name="date_from" value="{{ date_from }}"
+                class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">To</label>
+            <input type="date" name="date_to" value="{{ date_to }}"
+                class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <button type="submit" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 text-sm">Generate Report</button>
+        <a href="{% url 'report' %}" class="text-gray-500 hover:text-gray-700 text-sm py-2">Clear</a>
+    </form>
+</div>
+
+<!-- Overall Summary -->
+{% if overall.total > 0 %}
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white rounded-lg shadow p-4">
+        <p class="text-xs text-gray-500">Total Records</p>
+        <p class="text-2xl font-bold text-gray-900">{{ overall.total }}</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4">
+        <p class="text-xs text-gray-500">Present</p>
+        <p class="text-2xl font-bold text-green-600">{{ overall.present }}</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4">
+        <p class="text-xs text-gray-500">Absent</p>
+        <p class="text-2xl font-bold text-red-600">{{ overall.absent }}</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4">
+        <p class="text-xs text-gray-500">Attendance Rate</p>
+        <p class="text-2xl font-bold {% if overall.attendance_pct >= 80 %}text-green-600{% elif overall.attendance_pct >= 60 %}text-yellow-600{% else %}text-red-600{% endif %}">
+            {{ overall.attendance_pct }}%
+        </p>
+    </div>
+</div>
+{% endif %}
+
+<!-- Per-Student Table -->
+<div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-900">Per-Student Breakdown</h2>
+    </div>
+    <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Present</th>
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Absent</th>
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Late</th>
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance %</th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+            {% for stat in student_stats %}
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {{ stat.student__first_name }} {{ stat.student__last_name }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ stat.student__school_class__name }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-green-600 font-medium">{{ stat.present }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-red-600 font-medium">{{ stat.absent }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-yellow-600 font-medium">{{ stat.late }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-900">{{ stat.total }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                        {% if stat.attendance_pct >= 80 %}bg-green-100 text-green-800
+                        {% elif stat.attendance_pct >= 60 %}bg-yellow-100 text-yellow-800
+                        {% else %}bg-red-100 text-red-800{% endif %}">
+                        {{ stat.attendance_pct }}%
+                    </span>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="px-6 py-8 text-center text-gray-500">No attendance data found. Try adjusting filters.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

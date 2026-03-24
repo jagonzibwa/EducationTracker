@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Students - Education Tracker{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">Students</h1>
+    {% if user.profile.role == 'admin' %}
+    <a href="{% url 'student_create' %}" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 text-sm">
+        + Add Student
+    </a>
+    {% endif %}
+</div>
+
+<!-- Filters -->
+<div class="bg-white rounded-lg shadow p-4 mb-6">
+    <form method="get" class="flex flex-wrap gap-4 items-end">
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">Search</label>
+            <input type="text" name="search" value="{{ search }}" placeholder="Search by name..."
+                class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">Class</label>
+            <select name="class_id" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="">All Classes</option>
+                {% for cls in classes %}
+                <option value="{{ cls.id }}" {% if class_filter == cls.id|stringformat:"d" %}selected{% endif %}>{{ cls.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 text-sm">Filter</button>
+        <a href="{% url 'student_list' %}" class="text-gray-500 hover:text-gray-700 text-sm py-2">Clear</a>
+    </form>
+</div>
+
+<div class="bg-white rounded-lg shadow overflow-hidden">
+    <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Parent</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                {% if user.profile.role == 'admin' %}
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+            {% for student in students %}
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ student.first_name }} {{ student.last_name }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ student.school_class.name }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ student.parent_name }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ student.parent_phone }}</td>
+                {% if user.profile.role == 'admin' %}
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm space-x-2">
+                    <a href="{% url 'student_edit' student.pk %}" class="text-indigo-600 hover:text-indigo-800">Edit</a>
+                    <form method="post" action="{% url 'student_delete' student.pk %}" class="inline" onsubmit="return confirm('Delete this student?')">
+                        {% csrf_token %}
+                        <button type="submit" class="text-red-600 hover:text-red-800">Delete</button>
+                    </form>
+                </td>
+                {% endif %}
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="px-6 py-8 text-center text-gray-500">No students found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
