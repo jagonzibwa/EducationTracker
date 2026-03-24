@@ -48,9 +48,9 @@ class Command(BaseCommand):
         times will not create duplicate records.
         """
 
-        # =================================================================
+        # 
         # Create Admin User
-        # =================================================================
+        # 
         # get_or_create returns (object, was_created_bool)
         admin_user, created = User.objects.get_or_create(
             username='admin1',
@@ -71,9 +71,9 @@ class Command(BaseCommand):
         else:
             self.stdout.write('Admin user already exists.')
 
-        # =================================================================
+        # 
         # Create First Teacher User
-        # =================================================================
+        # 
         teacher_user, created = User.objects.get_or_create(
             username='teacher1',
             defaults={
@@ -92,9 +92,9 @@ class Command(BaseCommand):
         else:
             self.stdout.write('Teacher user already exists.')
 
-        # =================================================================
+        # 
         # Create Second Teacher User
-        # =================================================================
+        # 
         teacher2, created = User.objects.get_or_create(
             username='teacher2',
             defaults={
@@ -110,9 +110,9 @@ class Command(BaseCommand):
             teacher2.profile.save()
             self.stdout.write(self.style.SUCCESS('Created teacher user: teacher2 / teacher123'))
 
-        # =================================================================
+        # 
         # Create School Classes
-        # =================================================================
+        # 
         # Each class is assigned to a teacher via the 'teacher' ForeignKey
         p5, _ = SchoolClass.objects.get_or_create(
             name='Primary 5A', defaults={'teacher': teacher_user}
@@ -125,9 +125,9 @@ class Command(BaseCommand):
         )
         self.stdout.write(self.style.SUCCESS('Created 3 school classes'))
 
-        # =================================================================
+        # 
         # Create Students
-        # =================================================================
+        # 
         # Student data: (first_name, last_name, class, parent_name, phone)
         # All names are common Ugandan names; phone numbers use Uganda's +256 format
         students_data = [
@@ -160,9 +160,9 @@ class Command(BaseCommand):
             if created:
                 created_count += 1
 
-        # =================================================================
+        # 
         # Print Summary
-        # =================================================================
+        # 
         self.stdout.write(self.style.SUCCESS(f'Created {created_count} students'))
         self.stdout.write(self.style.SUCCESS('Seed data complete!'))
         self.stdout.write('')

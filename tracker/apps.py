@@ -1,5 +1,5 @@
 """
-tracker/apps.py - Tracker App Configuration
+tracker/apps.py - Education Tracker App Configuration
 
 Configures the 'tracker' Django application which contains the core
 domain logic: students, classes, attendance records, and SMS notifications.

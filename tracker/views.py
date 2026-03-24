@@ -37,9 +37,9 @@ from .services import send_sms
 from accounts.decorators import role_required
 
 
-# =========================================================================
+# 
 # Dashboard View
-# =========================================================================
+# 
 @login_required
 def dashboard_view(request):
     """
@@ -54,7 +54,7 @@ def dashboard_view(request):
     role = user.profile.role
 
     if role == 'parent':
-        # --- Parent Dashboard: children's attendance overview ---
+        # - Parent Dashboard: children's attendance overview -
         children = user.profile.children.all().select_related('school_class')
         children_data = []
         for child in children:
@@ -83,7 +83,7 @@ def dashboard_view(request):
         return render(request, 'tracker/dashboard_parent.html', context)
 
     if role in ('admin', 'sysadmin'):
-        # --- Admin/Sysadmin Dashboard: system-wide overview ---
+        # - Admin/Sysadmin Dashboard: system-wide overview -
         total_students = Student.objects.count()
         total_classes = SchoolClass.objects.count()
         total_teachers = user.__class__.objects.filter(profile__role='teacher').count()
@@ -110,7 +110,7 @@ def dashboard_view(request):
             'recent_notifications': recent_notifications,
         }
     else:
-        # --- Teacher Dashboard: scoped to assigned classes ---
+        # - Teacher Dashboard: scoped to assigned classes ---
         my_classes = SchoolClass.objects.filter(teacher=user)
         my_student_count = Student.objects.filter(school_class__teacher=user).count()
 
@@ -137,9 +137,9 @@ def dashboard_view(request):
     return render(request, 'tracker/dashboard.html', context)
 
 
-# =========================================================================
+# 
 # Class CRUD Views (Admin Only)
-# =========================================================================
+# 
 @login_required
 @role_required(['admin', 'sysadmin'])
 def class_list_view(request):
@@ -224,9 +224,9 @@ def class_delete_view(request, pk):
     return redirect('class_list')
 
 
-# =========================================================================
+# 
 # Student CRUD Views
-# =========================================================================
+# 
 @login_required
 def student_list_view(request):
     """
@@ -341,9 +341,9 @@ def student_delete_view(request, pk):
     return redirect('student_list')
 
 
-# =========================================================================
+# 
 # Attendance Recording View
-# =========================================================================
+# 
 @login_required
 @role_required(['teacher', 'admin', 'sysadmin'])
 def attendance_record_view(request):
@@ -380,7 +380,7 @@ def attendance_record_view(request):
         classes = SchoolClass.objects.all()
 
     if request.method == 'POST':
-        # --- Process the submitted attendance form ---
+        # - Process the submitted attendance form -
         class_id = request.POST.get('class_id')
         date_str = request.POST.get('date')
         school_class = get_object_or_404(SchoolClass, pk=class_id)
@@ -436,7 +436,7 @@ def attendance_record_view(request):
         )
         return redirect('attendance_list')
 
-    # --- GET request: display the attendance form ---
+    # - GET request: display the attendance form -
     class_id = request.GET.get('class_id')
     date_str = request.GET.get('date', timezone.now().date().isoformat())
 
@@ -472,9 +472,9 @@ def attendance_record_view(request):
     return render(request, 'tracker/attendance_form.html', context)
 
 
-# =========================================================================
+# 
 # Attendance List View
-# =========================================================================
+# 
 @login_required
 def attendance_list_view(request):
     """
@@ -537,9 +537,9 @@ def attendance_list_view(request):
     })
 
 
-# =========================================================================
+# 
 # Attendance Edit View (Correction with Audit Trail)
-# =========================================================================
+# 
 @login_required
 @role_required(['teacher', 'admin', 'sysadmin'])
 def attendance_edit_view(request, pk):
@@ -592,9 +592,9 @@ def attendance_edit_view(request, pk):
     return render(request, 'tracker/attendance_edit.html', {'record': original_record})
 
 
-# =========================================================================
+# 
 # Reports View
-# =========================================================================
+# 
 @login_required
 def report_view(request):
     """
@@ -645,7 +645,7 @@ def report_view(request):
     if date_to:
         records = records.filter(date__lte=date_to)
 
-    # --- Per-Student Summary ---
+    # - Per-Student Summary -
     # Group records by student, counting total and conditional counts per status
     # Uses Django's conditional aggregation: Count('id', filter=Q(status='x'))
     student_stats = list(records.values(
@@ -665,7 +665,7 @@ def report_view(request):
         else:
             stat['attendance_pct'] = 0
 
-    # --- Overall Summary ---
+    # - Overall Summary -
     # Aggregate totals across all filtered records (not grouped by student)
     overall = records.aggregate(
         total=Count('id'),
@@ -696,9 +696,9 @@ def report_view(request):
     })
 
 
-# =========================================================================
+# 
 # SMS Notification Log View (Admin Only)
-# =========================================================================
+# 
 @login_required
 @role_required(['admin', 'sysadmin'])
 def notification_log_view(request):
@@ -719,9 +719,9 @@ def notification_log_view(request):
     return render(request, 'tracker/notification_log.html', {'notifications': notifications})
 
 
-# =========================================================================
+# 
 # Grade Recording Views
-# =========================================================================
+# 
 @login_required
 @role_required(['teacher', 'admin', 'sysadmin'])
 def grade_record_view(request):
@@ -875,9 +875,9 @@ def grade_edit_view(request, pk):
     return render(request, 'tracker/grade_edit.html', {'record': original_record})
 
 
-# =========================================================================
+# 
 # Grade Reports View
-# =========================================================================
+# 
 @login_required
 def grade_report_view(request):
     """Generate and display grade statistics per student."""
@@ -944,9 +944,9 @@ def grade_report_view(request):
     })
 
 
-# =========================================================================
+# 
 # Parent Portal Views
-# =========================================================================
+# 
 @login_required
 @role_required(['parent'])
 def parent_attendance_view(request):

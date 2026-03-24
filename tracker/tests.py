@@ -1,5 +1,5 @@
 """
-tracker/tests.py - Unit Tests for the Tracker App
+tracker/tests.py - Unit Tests for the Education Tracker App
 
 Comprehensive test suite covering models, services, views, and forms
 for the core attendance tracking functionality. Tests are organized
@@ -41,9 +41,9 @@ from .models import SchoolClass, Student, AttendanceRecord, SMSNotification
 from .services import send_mock_sms
 
 
-# =========================================================================
+# 
 # Test Data Helper Mixin
-# =========================================================================
+# 
 class TestDataMixin:
     """
     Mixin that provides common test data used across multiple test classes.
@@ -62,7 +62,7 @@ class TestDataMixin:
     def create_test_data(self):
         """Create standard test fixtures used across multiple test classes."""
 
-        # --- Create an admin user ---
+        # - Create an admin user -
         self.admin_user = User.objects.create_user(
             username='admin', password='admin123',
             first_name='Admin', last_name='User'
@@ -71,7 +71,7 @@ class TestDataMixin:
         self.admin_user.profile.role = 'admin'
         self.admin_user.profile.save()
 
-        # --- Create a teacher user ---
+        # - Create a teacher user -
         self.teacher_user = User.objects.create_user(
             username='teacher', password='teacher123',
             first_name='Jane', last_name='Nakato'
@@ -80,16 +80,16 @@ class TestDataMixin:
         self.teacher_user.profile.role = 'teacher'
         self.teacher_user.profile.save()
 
-        # --- Create a school class assigned to the teacher ---
+        # - Create a school class assigned to the teacher -
         self.school_class = SchoolClass.objects.create(
             name='Primary 5A', teacher=self.teacher_user
         )
 
-        # --- Create a second class with no teacher assigned ---
+        # - Create a second class with no teacher assigned -
         # Used to test that teachers only see their own classes' data
         self.other_class = SchoolClass.objects.create(name='Primary 6B')
 
-        # --- Create two students in the teacher's class ---
+        # - Create two students in the teacher's class -
         self.student1 = Student.objects.create(
             first_name='Amina', last_name='Nakamya',
             school_class=self.school_class,
@@ -102,9 +102,9 @@ class TestDataMixin:
         )
 
 
-# =========================================================================
+# 
 # MODEL TESTS
-# =========================================================================
+# 
 class SchoolClassModelTest(TestCase):
     """Test the SchoolClass model for creation, relationships, and constraints."""
 
@@ -245,9 +245,9 @@ class SMSNotificationModelTest(TestCase, TestDataMixin):
         self.assertEqual(notif.parent_phone, '+256700100001')
 
 
-# =========================================================================
+# 
 # SERVICE TESTS
-# =========================================================================
+# 
 class SendMockSMSTest(TestCase, TestDataMixin):
     """
     Test the send_mock_sms() service function.
@@ -292,9 +292,9 @@ class SendMockSMSTest(TestCase, TestDataMixin):
         self.assertEqual(SMSNotification.objects.count(), 2)
 
 
-# =========================================================================
+# 
 # VIEW TESTS
-# =========================================================================
+# 
 class DashboardViewTest(TestCase, TestDataMixin):
     """Test the dashboard view for authentication and role-based content."""
 
@@ -697,9 +697,9 @@ class NotificationLogViewTest(TestCase, TestDataMixin):
         self.assertEqual(response.status_code, 302)  # Redirected to dashboard
 
 
-# =========================================================================
+# 
 # FORM TESTS
-# =========================================================================
+# 
 class SchoolClassFormTest(TestCase):
     """Test the SchoolClassForm validation logic."""
 
