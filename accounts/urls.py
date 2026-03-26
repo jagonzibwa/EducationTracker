@@ -19,9 +19,6 @@ urlpatterns = [
     # Logout - uses Django's built-in LogoutView; redirects to LOGOUT_REDIRECT_URL in settings
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
 
-    # Registration - custom view for creating new Teacher/Admin accounts
-    path('register/', views.register_view, name='register'),
-
     # Profile - displays the logged-in user's information
     path('profile/', views.profile_view, name='profile'),
 
