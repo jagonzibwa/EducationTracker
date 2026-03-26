@@ -5,3 +5,4 @@ africastalking==2.0.2
 gunicorn==23.0.0
 whitenoise==6.8.2
 psycopg2-binary==2.9.10
+dj-database-url==2.3.0

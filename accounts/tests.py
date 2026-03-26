@@ -37,9 +37,9 @@ from django.urls import reverse
 from .models import UserProfile
 
 
-# =========================================================================
+# 
 # Model Tests
-# =========================================================================
+# 
 class UserProfileModelTest(TestCase):
     """Test the UserProfile model and its automatic creation via signals."""
 
@@ -89,9 +89,9 @@ class UserProfileModelTest(TestCase):
         self.assertIn('Teacher', str(user.profile))
 
 
-# =========================================================================
+# 
 # Registration View Tests
-# =========================================================================
+# 
 class RegistrationViewTest(TestCase):
     """Test the user registration view (/accounts/register/)."""
 
@@ -183,9 +183,9 @@ class RegistrationViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
 
-# =========================================================================
+# 
 # Login View Tests
-# =========================================================================
+# 
 class LoginViewTest(TestCase):
     """Test the login view (/accounts/login/)."""
 
@@ -235,9 +235,9 @@ class LoginViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
 
-# =========================================================================
+# 
 # Profile View Tests
-# =========================================================================
+# 
 class ProfileViewTest(TestCase):
     """Test the profile view (/accounts/profile/)."""
 

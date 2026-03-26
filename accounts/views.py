@@ -38,9 +38,9 @@ def profile_view(request):
     return render(request, 'accounts/profile.html')
 
 
-# =========================================================================
+# 
 # User Management Views (Admin Only)
-# =========================================================================
+# 
 @login_required
 @role_required(['admin', 'sysadmin'])
 def user_list_view(request):
