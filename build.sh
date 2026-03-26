@@ -8,6 +8,16 @@ python manage.py migrate
 # Create superuser from environment variables (only if it doesn't already exist)
 if [ -n "$DJANGO_SUPERUSER_USERNAME" ]; then
     python manage.py createsuperuser --noinput || true
+    # Set superuser's role to admin so they can access all data
+    python manage.py shell -c "
+from django.contrib.auth.models import User
+import os
+u = User.objects.filter(username=os.environ['DJANGO_SUPERUSER_USERNAME']).first()
+if u and hasattr(u, 'profile'):
+    u.profile.role = 'admin'
+    u.profile.save()
+    print(f'Set {u.username} role to admin')
+" || true
 fi
 
 # Seed the database with test data (skips if data already exists)
