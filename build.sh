@@ -9,3 +9,6 @@ python manage.py migrate
 if [ -n "$DJANGO_SUPERUSER_USERNAME" ]; then
     python manage.py createsuperuser --noinput || true
 fi
+
+# Seed the database with test data (skips if data already exists)
+python manage.py seed_data || true
