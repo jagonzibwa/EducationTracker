@@ -20,5 +20,11 @@ if u and hasattr(u, 'profile'):
 " || true
 fi
 
-# Seed the database with test data (skips if data already exists)
+# Seed the database with test data.
+# Uses get_or_create for users/classes/students (always safe to re-run).
+# Attendance and grade records are only created once — if they already
+# exist the command skips them, so redeploying without a DB wipe is safe.
+#
+# To force a full reseed on Render: delete the PostgreSQL database, let
+# Render recreate it, then trigger a manual deploy.
 python manage.py seed_data || true

@@ -33,17 +33,33 @@
             <input type="text" name="subject" value="{{ subject_filter }}" placeholder="Filter by subject"
                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
         </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Student</label>
+            <select name="student_id" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="">All Students</option>
+                {% for s in students %}
+                <option value="{{ s.id }}" {% if student_id == s.id|stringformat:"d" %}selected{% endif %}>{{ s.last_name }}, {{ s.first_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
         <div class="flex items-end gap-2">
             <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Filter</button>
             <a href="{% url 'grade_report' %}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">Clear</a>
             {% if student_stats %}
-            <a href="{% url 'grade_report_print' %}?class_id={{ class_filter }}&term={{ term_filter }}&subject={{ subject_filter }}" target="_blank"
+            <a href="{% url 'grade_report_print' %}?class_id={{ class_filter }}&term={{ term_filter }}&subject={{ subject_filter }}&student_id={{ student_id }}" target="_blank"
                 class="bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-900">
                 Print / Download Report
             </a>
             {% endif %}
         </div>
     </form>
+    {% if selected_student %}
+    <div class="mt-3 pt-3 border-t border-gray-200">
+        <a href="{% url 'student_grade_report' selected_student.id %}" class="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+            View Individual Report for {{ selected_student.first_name }} {{ selected_student.last_name }} &rarr;
+        </a>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Overall Summary -->
@@ -76,7 +92,11 @@
         <tbody class="bg-white divide-y divide-gray-200">
             {% for stat in student_stats %}
             <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4 text-sm text-gray-900">{{ stat.student__first_name }} {{ stat.student__last_name }}</td>
+                <td class="px-6 py-4 text-sm text-gray-900">
+                    <a href="{% url 'student_grade_report' stat.student__id %}" class="text-indigo-600 hover:text-indigo-800">
+                        {{ stat.student__first_name }} {{ stat.student__last_name }}
+                    </a>
+                </td>
                 <td class="px-6 py-4 text-sm text-gray-500">{{ stat.student__school_class__name }}</td>
                 <td class="px-6 py-4 text-sm text-gray-900">{{ stat.total_grades }}</td>
                 <td class="px-6 py-4 text-sm font-medium

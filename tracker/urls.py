@@ -40,6 +40,9 @@ urlpatterns = [
     # - Reports -
     path('reports/', views.report_view, name='report'),                           # Attendance reports
     path('reports/print/', views.report_print_view, name='report_print'),        # Printable report
+    path('reports/student/<int:student_id>/attendance/', views.student_attendance_report_view, name='student_attendance_report'),
+    path('reports/student/<int:student_id>/grades/', views.student_grade_report_view, name='student_grade_report'),
+    path('reports/student/<int:student_id>/print/', views.student_report_print_view, name='student_report_print'),
 
     # - Grades -
     path('grades/', views.grade_list_view, name='grade_list'),                    # View grade log

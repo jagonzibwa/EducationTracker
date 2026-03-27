@@ -27,15 +27,31 @@
             <input type="date" name="date_to" value="{{ date_to }}"
                 class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
         </div>
+        <div>
+            <label class="block text-xs text-gray-500 mb-1">Student</label>
+            <select name="student_id" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="">All Students</option>
+                {% for s in students %}
+                <option value="{{ s.id }}" {% if student_id == s.id|stringformat:"d" %}selected{% endif %}>{{ s.last_name }}, {{ s.first_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
         <button type="submit" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 text-sm">Generate Report</button>
         <a href="{% url 'report' %}" class="text-gray-500 hover:text-gray-700 text-sm py-2">Clear</a>
         {% if student_stats %}
-        <a href="{% url 'report_print' %}?class_id={{ class_filter }}&date_from={{ date_from }}&date_to={{ date_to }}" target="_blank"
+        <a href="{% url 'report_print' %}?class_id={{ class_filter }}&date_from={{ date_from }}&date_to={{ date_to }}&student_id={{ student_id }}" target="_blank"
             class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 text-sm ml-auto">
             Print / Download Report
         </a>
         {% endif %}
     </form>
+    {% if selected_student %}
+    <div class="mt-3 pt-3 border-t border-gray-200">
+        <a href="{% url 'student_attendance_report' selected_student.id %}" class="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+            View Individual Report for {{ selected_student.first_name }} {{ selected_student.last_name }} &rarr;
+        </a>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Overall Summary -->
@@ -83,7 +99,9 @@
             {% for stat in student_stats %}
             <tr>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {{ stat.student__first_name }} {{ stat.student__last_name }}
+                    <a href="{% url 'student_attendance_report' stat.student__id %}" class="text-indigo-600 hover:text-indigo-800">
+                        {{ stat.student__first_name }} {{ stat.student__last_name }}
+                    </a>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ stat.student__school_class__name }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-green-600 font-medium">{{ stat.present }}</td>

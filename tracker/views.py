@@ -633,10 +633,11 @@ def report_view(request):
     if request.user.profile.role == 'teacher':
         records = records.filter(student__school_class__teacher=request.user)
 
-    # Apply optional date and class filters
+    # Apply optional date, class, and student filters
     class_filter = request.GET.get('class_id', '')
     date_from = request.GET.get('date_from', '')
     date_to = request.GET.get('date_to', '')
+    student_id = request.GET.get('student_id', '')
 
     if class_filter:
         records = records.filter(student__school_class_id=class_filter)
@@ -644,6 +645,14 @@ def report_view(request):
         records = records.filter(date__gte=date_from)
     if date_to:
         records = records.filter(date__lte=date_to)
+
+    selected_student = None
+    if student_id:
+        records = records.filter(student_id=student_id)
+        try:
+            selected_student = Student.objects.get(id=student_id)
+        except Student.DoesNotExist:
+            pass
 
     # - Per-Student Summary -
     # Group records by student, counting total and conditional counts per status
@@ -683,8 +692,10 @@ def report_view(request):
     # Provide classes for the filter dropdown (scoped by role)
     if request.user.profile.role in ('admin', 'sysadmin'):
         classes = SchoolClass.objects.all()
+        students = Student.objects.select_related('school_class').order_by('last_name', 'first_name')
     else:
         classes = SchoolClass.objects.filter(teacher=request.user)
+        students = Student.objects.filter(school_class__teacher=request.user).select_related('school_class').order_by('last_name', 'first_name')
 
     return render(request, 'tracker/report.html', {
         'student_stats': student_stats,  # List of per-student statistics
@@ -693,6 +704,9 @@ def report_view(request):
         'class_filter': class_filter,    # Preserve filter selections
         'date_from': date_from,
         'date_to': date_to,
+        'students': students,
+        'student_id': student_id,
+        'selected_student': selected_student,
     })
 
 
@@ -715,6 +729,7 @@ def report_print_view(request):
     class_filter = request.GET.get('class_id', '')
     date_from = request.GET.get('date_from', '')
     date_to = request.GET.get('date_to', '')
+    student_id = request.GET.get('student_id', '')
 
     class_name = ''
     if class_filter:
@@ -727,6 +742,8 @@ def report_print_view(request):
         records = records.filter(date__gte=date_from)
     if date_to:
         records = records.filter(date__lte=date_to)
+    if student_id:
+        records = records.filter(student_id=student_id)
 
     student_stats = list(records.values(
         'student__id', 'student__first_name', 'student__last_name',
@@ -963,6 +980,7 @@ def grade_report_view(request):
     class_filter = request.GET.get('class_id', '')
     term_filter = request.GET.get('term', '')
     subject_filter = request.GET.get('subject', '')
+    student_id = request.GET.get('student_id', '')
 
     if class_filter:
         records = records.filter(student__school_class_id=class_filter)
@@ -970,6 +988,14 @@ def grade_report_view(request):
         records = records.filter(term=term_filter)
     if subject_filter:
         records = records.filter(subject__icontains=subject_filter)
+
+    selected_student = None
+    if student_id:
+        records = records.filter(student_id=student_id)
+        try:
+            selected_student = Student.objects.get(id=student_id)
+        except Student.DoesNotExist:
+            pass
 
     student_stats = list(records.values(
         'student__id', 'student__first_name', 'student__last_name',
@@ -995,12 +1021,15 @@ def grade_report_view(request):
 
     if request.user.profile.role in ('admin', 'sysadmin'):
         classes = SchoolClass.objects.all()
+        students = Student.objects.select_related('school_class').order_by('last_name', 'first_name')
     elif request.user.profile.role == 'teacher':
         classes = SchoolClass.objects.filter(teacher=request.user)
+        students = Student.objects.filter(school_class__teacher=request.user).select_related('school_class').order_by('last_name', 'first_name')
     else:
         classes = SchoolClass.objects.filter(
             students__in=request.user.profile.children.all()
         ).distinct()
+        students = request.user.profile.children.select_related('school_class').order_by('last_name', 'first_name')
 
     return render(request, 'tracker/grade_report.html', {
         'student_stats': student_stats,
@@ -1010,6 +1039,9 @@ def grade_report_view(request):
         'term_filter': term_filter,
         'subject_filter': subject_filter,
         'term_choices': GradeRecord.TERM_CHOICES,
+        'students': students,
+        'student_id': student_id,
+        'selected_student': selected_student,
     })
 
 
@@ -1037,6 +1069,7 @@ def grade_report_print_view(request):
     class_filter = request.GET.get('class_id', '')
     term_filter = request.GET.get('term', '')
     subject_filter = request.GET.get('subject', '')
+    student_id = request.GET.get('student_id', '')
 
     class_name = ''
     if class_filter:
@@ -1049,6 +1082,8 @@ def grade_report_print_view(request):
         records = records.filter(term=term_filter)
     if subject_filter:
         records = records.filter(subject__icontains=subject_filter)
+    if student_id:
+        records = records.filter(student_id=student_id)
 
     # Resolve term display name
     term_name = ''
@@ -1084,6 +1119,192 @@ def grade_report_print_view(request):
         'class_name': class_name,
         'term_name': term_name,
         'subject_filter': subject_filter,
+    })
+
+
+#
+# Individual Student Report Views
+#
+@login_required
+def student_attendance_report_view(request, student_id):
+    """Display full attendance record history for a single student."""
+    from django.http import Http404
+
+    role = request.user.profile.role
+    if role in ('admin', 'sysadmin'):
+        student = get_object_or_404(Student, pk=student_id)
+    elif role == 'teacher':
+        student = get_object_or_404(Student, pk=student_id, school_class__teacher=request.user)
+    elif role == 'parent':
+        student = get_object_or_404(Student, pk=student_id)
+        if not request.user.profile.children.filter(pk=student_id).exists():
+            raise Http404
+    else:
+        raise Http404
+
+    records = AttendanceRecord.objects.filter(
+        student=student, corrections__isnull=True
+    ).select_related('recorded_by').order_by('-date')
+
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+
+    if date_from:
+        records = records.filter(date__gte=date_from)
+    if date_to:
+        records = records.filter(date__lte=date_to)
+
+    total = records.count()
+    present = records.filter(status='present').count()
+    absent = records.filter(status='absent').count()
+    late = records.filter(status='late').count()
+    attendance_pct = round(present / total * 100) if total > 0 else 0
+
+    return render(request, 'tracker/student_attendance_report.html', {
+        'student': student,
+        'records': records,
+        'total': total,
+        'present': present,
+        'absent': absent,
+        'late': late,
+        'attendance_pct': attendance_pct,
+        'date_from': date_from,
+        'date_to': date_to,
+    })
+
+
+@login_required
+def student_grade_report_view(request, student_id):
+    """Display full grade record history for a single student."""
+    from django.http import Http404
+    from django.db.models import Avg, Max, Min
+    from collections import defaultdict
+
+    role = request.user.profile.role
+    if role in ('admin', 'sysadmin'):
+        student = get_object_or_404(Student, pk=student_id)
+    elif role == 'teacher':
+        student = get_object_or_404(Student, pk=student_id, school_class__teacher=request.user)
+    elif role == 'parent':
+        student = get_object_or_404(Student, pk=student_id)
+        if not request.user.profile.children.filter(pk=student_id).exists():
+            raise Http404
+    else:
+        raise Http404
+
+    records = GradeRecord.objects.filter(
+        student=student, corrections__isnull=True
+    ).select_related('recorded_by').order_by('subject', 'term')
+
+    term_filter = request.GET.get('term', '')
+    subject_filter = request.GET.get('subject', '')
+
+    if term_filter:
+        records = records.filter(term=term_filter)
+    if subject_filter:
+        records = records.filter(subject__icontains=subject_filter)
+
+    records_list = list(records)
+    total = len(records_list)
+    scores = [float(r.score) for r in records_list]
+    avg_score = round(sum(scores) / total, 1) if total > 0 else 0
+    highest = round(max(scores), 1) if scores else 0
+    lowest = round(min(scores), 1) if scores else 0
+
+    # Group by subject
+    by_subject = defaultdict(list)
+    for r in records_list:
+        by_subject[r.subject].append(r)
+    grades_by_subject = dict(sorted(by_subject.items()))
+
+    return render(request, 'tracker/student_grade_report.html', {
+        'student': student,
+        'grades_by_subject': grades_by_subject,
+        'total': total,
+        'avg_score': avg_score,
+        'highest': highest,
+        'lowest': lowest,
+        'term_filter': term_filter,
+        'subject_filter': subject_filter,
+        'term_choices': GradeRecord.TERM_CHOICES,
+    })
+
+
+@login_required
+def student_report_print_view(request, student_id):
+    """Combined printable report (attendance + grades) for a single student."""
+    from django.http import Http404
+    from django.db.models import Avg, Max, Min
+    from collections import defaultdict
+
+    role = request.user.profile.role
+    if role in ('admin', 'sysadmin'):
+        student = get_object_or_404(Student, pk=student_id)
+    elif role == 'teacher':
+        student = get_object_or_404(Student, pk=student_id, school_class__teacher=request.user)
+    elif role == 'parent':
+        student = get_object_or_404(Student, pk=student_id)
+        if not request.user.profile.children.filter(pk=student_id).exists():
+            raise Http404
+    else:
+        raise Http404
+
+    term_filter = request.GET.get('term', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+
+    # Attendance
+    att_records = AttendanceRecord.objects.filter(
+        student=student, corrections__isnull=True
+    ).select_related('recorded_by').order_by('-date')
+    if date_from:
+        att_records = att_records.filter(date__gte=date_from)
+    if date_to:
+        att_records = att_records.filter(date__lte=date_to)
+
+    att_total = att_records.count()
+    att_present = att_records.filter(status='present').count()
+    att_absent = att_records.filter(status='absent').count()
+    att_late = att_records.filter(status='late').count()
+    att_pct = round(att_present / att_total * 100) if att_total > 0 else 0
+
+    # Grades
+    grade_records = GradeRecord.objects.filter(
+        student=student, corrections__isnull=True
+    ).select_related('recorded_by').order_by('subject', 'term')
+    if term_filter:
+        grade_records = grade_records.filter(term=term_filter)
+
+    grade_list = list(grade_records)
+    scores = [float(r.score) for r in grade_list]
+    grade_total = len(grade_list)
+    avg_score = round(sum(scores) / grade_total, 1) if grade_total > 0 else 0
+
+    by_subject = defaultdict(list)
+    for r in grade_list:
+        by_subject[r.subject].append(r)
+    grades_by_subject = dict(sorted(by_subject.items()))
+
+    term_name = ''
+    if term_filter:
+        term_name = dict(GradeRecord.TERM_CHOICES).get(term_filter, term_filter)
+
+    return render(request, 'tracker/student_report_print.html', {
+        'student': student,
+        'att_records': att_records,
+        'att_total': att_total,
+        'att_present': att_present,
+        'att_absent': att_absent,
+        'att_late': att_late,
+        'att_pct': att_pct,
+        'grades_by_subject': grades_by_subject,
+        'grade_total': grade_total,
+        'avg_score': avg_score,
+        'term_name': term_name,
+        'term_filter': term_filter,
+        'date_from': date_from,
+        'date_to': date_to,
+        'generated_date': timezone.now().date(),
     })
 
 

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ student.first_name }} {{ student.last_name }} - Full Report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body { font-size: 12pt; }
+        }
+        body { font-family: sans-serif; }
+    </style>
+</head>
+<body class="bg-white p-8 max-w-4xl mx-auto">
+
+    <!-- Header -->
+    <div class="border-b-2 border-gray-800 pb-4 mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Student Report</h1>
+        <div class="mt-2 grid grid-cols-3 gap-4 text-sm text-gray-700">
+            <div><span class="font-semibold">Name:</span> {{ student.first_name }} {{ student.last_name }}</div>
+            <div><span class="font-semibold">Class:</span> {{ student.school_class.name }}</div>
+            <div><span class="font-semibold">Generated:</span> {{ generated_date }}</div>
+        </div>
+        {% if term_name or date_from or date_to %}
+        <div class="mt-1 text-sm text-gray-500">
+            {% if term_name %}Term: {{ term_name }}{% endif %}
+            {% if date_from %} &nbsp;|&nbsp; From: {{ date_from }}{% endif %}
+            {% if date_to %} &nbsp;|&nbsp; To: {{ date_to }}{% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Print / Close buttons -->
+    <div class="no-print mb-6 flex gap-3">
+        <button onclick="window.print()" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 text-sm">Print</button>
+        <button onclick="window.close()" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 text-sm">Close</button>
+    </div>
+
+    <!-- Attendance Summary -->
+    <h2 class="text-xl font-bold text-gray-900 mb-3">Attendance Summary</h2>
+    <table class="w-full border border-gray-300 mb-8 text-sm">
+        <thead>
+            <tr class="bg-gray-100">
+                <th class="border border-gray-300 px-4 py-2 text-left">Total Days</th>
+                <th class="border border-gray-300 px-4 py-2 text-left">Present</th>
+                <th class="border border-gray-300 px-4 py-2 text-left">Absent</th>
+                <th class="border border-gray-300 px-4 py-2 text-left">Late</th>
+                <th class="border border-gray-300 px-4 py-2 text-left">Attendance Rate</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="border border-gray-300 px-4 py-2">{{ att_total }}</td>
+                <td class="border border-gray-300 px-4 py-2">{{ att_present }}</td>
+                <td class="border border-gray-300 px-4 py-2">{{ att_absent }}</td>
+                <td class="border border-gray-300 px-4 py-2">{{ att_late }}</td>
+                <td class="border border-gray-300 px-4 py-2 font-semibold">{{ att_pct }}%</td>
+            </tr>
+        </tbody>
+    </table>
+
+    {% if att_records %}
+    <h3 class="text-base font-semibold text-gray-800 mb-2">Attendance Records</h3>
+    <table class="w-full border border-gray-300 mb-8 text-sm">
+        <thead>
+            <tr class="bg-gray-100">
+                <th class="border border-gray-300 px-4 py-2 text-left">Date</th>
+                <th class="border border-gray-300 px-4 py-2 text-left">Status</th>
+                <th class="border border-gray-300 px-4 py-2 text-left">Recorded By</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in att_records %}
+            <tr>
+                <td class="border border-gray-300 px-4 py-2">{{ record.date }}</td>
+                <td class="border border-gray-300 px-4 py-2">{{ record.get_status_display }}</td>
+                <td class="border border-gray-300 px-4 py-2">
+                    {% if record.recorded_by %}{{ record.recorded_by.get_full_name|default:record.recorded_by.username }}{% else %}&mdash;{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    <!-- Grades -->
+    <h2 class="text-xl font-bold text-gray-900 mb-3">Grades</h2>
+
+    {% if grade_total > 0 %}
+    <table class="w-full border border-gray-300 mb-6 text-sm">
+        <thead>
+            <tr class="bg-gray-100">
+                <th class="border border-gray-300 px-4 py-2 text-left">Total Grades</th>
+                <th class="border border-gray-300 px-4 py-2 text-left">Average Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="border border-gray-300 px-4 py-2">{{ grade_total }}</td>
+                <td class="border border-gray-300 px-4 py-2 font-semibold">{{ avg_score }}%</td>
+            </tr>
+        </tbody>
+    </table>
+
+    {% for subject, subject_records in grades_by_subject.items %}
+    <h3 class="text-base font-semibold text-gray-800 mb-2">{{ subject }}</h3>
+    <table class="w-full border border-gray-300 mb-6 text-sm">
+        <thead>
+            <tr class="bg-gray-100">
+                <th class="border border-gray-300 px-4 py-2 text-left">Term</th>
+                <th class="border border-gray-300 px-4 py-2 text-left">Score</th>
+                <th class="border border-gray-300 px-4 py-2 text-left">Recorded By</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in subject_records %}
+            <tr>
+                <td class="border border-gray-300 px-4 py-2">{{ record.get_term_display }}</td>
+                <td class="border border-gray-300 px-4 py-2">{{ record.score }}%</td>
+                <td class="border border-gray-300 px-4 py-2">
+                    {% if record.recorded_by %}{{ record.recorded_by.get_full_name|default:record.recorded_by.username }}{% else %}&mdash;{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endfor %}
+
+    {% else %}
+    <p class="text-gray-500 text-sm mb-6">No grade records found.</p>
+    {% endif %}
+
+</body>
+</html>
