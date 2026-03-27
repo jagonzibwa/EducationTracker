@@ -1314,49 +1314,56 @@ def student_report_print_view(request, student_id):
 @login_required
 @role_required(['parent'])
 def parent_attendance_view(request):
-    """Read-only view for parents to see their children's attendance records."""
-    children = request.user.profile.children.all()
-    children_ids = children.values_list('id', flat=True)
+    """Show each linked child as a card with an attendance summary and link to full report."""
+    children = request.user.profile.children.select_related('school_class').all()
 
-    records = AttendanceRecord.objects.filter(
-        student_id__in=children_ids,
-        corrections__isnull=True,
-    ).select_related('student', 'student__school_class').order_by('-date')
-
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
-    if date_from:
-        records = records.filter(date__gte=date_from)
-    if date_to:
-        records = records.filter(date__lte=date_to)
+    children_data = []
+    for child in children:
+        records = AttendanceRecord.objects.filter(
+            student=child, corrections__isnull=True
+        )
+        total = records.count()
+        present = records.filter(status='present').count()
+        absent = records.filter(status='absent').count()
+        late = records.filter(status='late').count()
+        pct = round(present / total * 100) if total > 0 else 0
+        children_data.append({
+            'student': child,
+            'total': total,
+            'present': present,
+            'absent': absent,
+            'late': late,
+            'attendance_pct': pct,
+        })
 
     return render(request, 'tracker/parent_attendance.html', {
-        'records': records[:200],
-        'children': children,
-        'date_from': date_from,
-        'date_to': date_to,
+        'children_data': children_data,
     })
 
 
 @login_required
 @role_required(['parent'])
 def parent_grades_view(request):
-    """Read-only view for parents to see their children's grades."""
-    children = request.user.profile.children.all()
-    children_ids = children.values_list('id', flat=True)
+    """Show each linked child as a card with a grades summary and link to full report."""
+    from django.db.models import Avg
 
-    records = GradeRecord.objects.filter(
-        student_id__in=children_ids,
-        corrections__isnull=True,
-    ).select_related('student', 'student__school_class').order_by('student__last_name', 'subject')
+    children = request.user.profile.children.select_related('school_class').all()
 
-    term_filter = request.GET.get('term', '')
-    if term_filter:
-        records = records.filter(term=term_filter)
+    children_data = []
+    for child in children:
+        records = GradeRecord.objects.filter(
+            student=child, corrections__isnull=True
+        )
+        agg = records.aggregate(avg=Avg('score'), total=Count('id'))
+        avg = round(float(agg['avg']), 1) if agg['avg'] else 0
+        subject_count = records.values('subject').distinct().count()
+        children_data.append({
+            'student': child,
+            'avg_score': avg,
+            'total_grades': agg['total'],
+            'subject_count': subject_count,
+        })
 
     return render(request, 'tracker/parent_grades.html', {
-        'records': records[:200],
-        'children': children,
-        'term_filter': term_filter,
-        'term_choices': GradeRecord.TERM_CHOICES,
+        'children_data': children_data,
     })

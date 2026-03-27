@@ -11,6 +11,7 @@
     <form method="post">
         {% csrf_token %}
         {% for field in form %}
+        {% if field.html_name != 'children' %}
         <div class="mb-4">
             {% if field.field.widget.input_type == 'checkbox' %}
             <div class="flex items-center gap-2">
@@ -51,7 +52,38 @@
             <p class="mt-1 text-xs text-red-600">{{ field.errors.0 }}</p>
             {% endif %}
         </div>
+        {% endif %}
         {% endfor %}
+
+        <!-- Children field — only visible when role is Parent -->
+        {% if form.children %}
+        <div id="children-section" class="mb-4" style="display:none">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                Linked Students (children)
+            </label>
+            <div class="border border-gray-300 rounded-md p-3 max-h-64 overflow-y-auto space-y-1">
+                {% for child in form.children.field.queryset %}
+                <label class="flex items-center gap-2 py-1 cursor-pointer hover:bg-gray-50 px-1 rounded">
+                    <input type="checkbox"
+                           name="children"
+                           value="{{ child.pk }}"
+                           {% if child.pk in selected_children_ids %}checked{% endif %}
+                           class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                    <span class="text-sm text-gray-700">
+                        {{ child.first_name }} {{ child.last_name }}
+                        <span class="text-gray-400">&mdash; {{ child.school_class.name }}</span>
+                    </span>
+                </label>
+                {% empty %}
+                <p class="text-sm text-gray-500">No students in the system yet.</p>
+                {% endfor %}
+            </div>
+            <p class="mt-1 text-xs text-gray-500">Check each student this parent can view.</p>
+            {% if form.children.errors %}
+            <p class="mt-1 text-xs text-red-600">{{ form.children.errors.0 }}</p>
+            {% endif %}
+        </div>
+        {% endif %}
 
         <div class="flex gap-3 mt-6">
             <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700">Save</button>
@@ -59,4 +91,16 @@
         </div>
     </form>
 </div>
+
+<script>
+    const roleSelect = document.getElementById('id_role');
+    const childrenSection = document.getElementById('children-section');
+    if (roleSelect && childrenSection) {
+        function toggleChildren() {
+            childrenSection.style.display = roleSelect.value === 'parent' ? 'block' : 'none';
+        }
+        roleSelect.addEventListener('change', toggleChildren);
+        toggleChildren();
+    }
+</script>
 {% endblock %}

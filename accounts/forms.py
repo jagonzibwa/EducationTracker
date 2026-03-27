@@ -8,6 +8,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from .models import UserProfile
+from tracker.models import Student
 
 # Reusable Tailwind CSS classes for form input styling
 TAILWIND_INPUT_CLASS = (
@@ -62,6 +63,13 @@ class AdminUserEditForm(forms.ModelForm):
     role = forms.ChoiceField(choices=ROLE_CHOICES, required=True)
     is_active = forms.BooleanField(required=False, label='Active',
                                    help_text='Uncheck to deactivate this user account.')
+    children = forms.ModelMultipleChoiceField(
+        queryset=Student.objects.select_related('school_class').order_by(
+            'school_class__name', 'last_name', 'first_name'
+        ),
+        required=False,
+        label='Linked Students (children)',
+    )
 
     class Meta:
         model = User

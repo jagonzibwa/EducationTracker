@@ -45,7 +45,7 @@ def profile_view(request):
 @role_required(['admin', 'sysadmin'])
 def user_list_view(request):
     """Display all users in the system with their roles and status."""
-    users = User.objects.select_related('profile').order_by('username')
+    users = User.objects.select_related('profile').prefetch_related('profile__children').order_by('username')
     role_filter = request.GET.get('role', '')
     if role_filter:
         users = users.filter(profile__role=role_filter)
@@ -69,7 +69,9 @@ def user_create_view(request):
             return redirect('user_list')
     else:
         form = AdminUserCreateForm()
-    return render(request, 'accounts/user_form.html', {'form': form, 'title': 'Create User'})
+    return render(request, 'accounts/user_form.html', {
+        'form': form, 'title': 'Create User', 'selected_children_ids': [],
+    })
 
 
 @login_required
@@ -81,17 +83,26 @@ def user_edit_view(request, pk):
         form = AdminUserEditForm(request.POST, instance=target_user)
         if form.is_valid():
             form.save()
-            target_user.profile.role = form.cleaned_data['role']
-            target_user.profile.save()
+            profile = target_user.profile
+            profile.role = form.cleaned_data['role']
+            profile.save()
+            if profile.role == 'parent':
+                profile.children.set(form.cleaned_data['children'])
+            else:
+                profile.children.clear()
             messages.success(request, f'User "{target_user.username}" updated successfully.')
             return redirect('user_list')
     else:
         form = AdminUserEditForm(instance=target_user, initial={
             'role': target_user.profile.role,
+            'children': target_user.profile.children.all(),
         })
+    selected_children_ids = list(target_user.profile.children.values_list('id', flat=True))
     return render(request, 'accounts/user_form.html', {
-        'form': form, 'title': f'Edit User: {target_user.username}',
+        'form': form,
+        'title': f'Edit User: {target_user.username}',
         'target_user': target_user,
+        'selected_children_ids': selected_children_ids,
     })
 
 
