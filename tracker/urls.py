@@ -39,12 +39,14 @@ urlpatterns = [
 
     # - Reports -
     path('reports/', views.report_view, name='report'),                           # Attendance reports
+    path('reports/print/', views.report_print_view, name='report_print'),        # Printable report
 
     # - Grades -
     path('grades/', views.grade_list_view, name='grade_list'),                    # View grade log
     path('grades/record/', views.grade_record_view, name='grade_record'),         # Record grades
     path('grades/<int:pk>/edit/', views.grade_edit_view, name='grade_edit'),      # Edit/correct grade
     path('grades/reports/', views.grade_report_view, name='grade_report'),        # Grade reports
+    path('grades/reports/print/', views.grade_report_print_view, name='grade_report_print'),  # Printable grade report
 
     # - Parent Portal -
     path('parent/attendance/', views.parent_attendance_view, name='parent_attendance'),

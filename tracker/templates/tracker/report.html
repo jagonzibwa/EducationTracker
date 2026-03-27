@@ -29,6 +29,12 @@
         </div>
         <button type="submit" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 text-sm">Generate Report</button>
         <a href="{% url 'report' %}" class="text-gray-500 hover:text-gray-700 text-sm py-2">Clear</a>
+        {% if student_stats %}
+        <a href="{% url 'report_print' %}?class_id={{ class_filter }}&date_from={{ date_from }}&date_to={{ date_to }}" target="_blank"
+            class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 text-sm ml-auto">
+            Print / Download Report
+        </a>
+        {% endif %}
     </form>
 </div>
 

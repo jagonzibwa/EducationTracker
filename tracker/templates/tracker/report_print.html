@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Report - Education Tracker</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; color: #1a1a1a; padding: 40px; font-size: 12px; }
+
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 15px; }
+        .header h1 { font-size: 22px; margin-bottom: 4px; }
+        .header p { color: #666; font-size: 13px; }
+
+        .filters { margin-bottom: 20px; color: #555; font-size: 11px; }
+        .filters span { margin-right: 20px; }
+
+        .summary { display: flex; gap: 20px; margin-bottom: 25px; }
+        .summary-card { flex: 1; border: 1px solid #ddd; border-radius: 6px; padding: 12px; text-align: center; }
+        .summary-card .label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+        .summary-card .value { font-size: 22px; font-weight: bold; margin-top: 4px; }
+        .green { color: #16a34a; }
+        .red { color: #dc2626; }
+        .yellow { color: #ca8a04; }
+
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th { background: #f3f4f6; text-align: left; padding: 8px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #555; border-bottom: 2px solid #ddd; }
+        td { padding: 8px 12px; border-bottom: 1px solid #eee; }
+        td.center, th.center { text-align: center; }
+
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+        .badge-green { background: #dcfce7; color: #166534; }
+        .badge-yellow { background: #fef9c3; color: #854d0e; }
+        .badge-red { background: #fee2e2; color: #991b1b; }
+
+        .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; text-align: center; color: #999; font-size: 10px; }
+
+        .actions { text-align: center; margin-bottom: 20px; }
+        .actions button { padding: 8px 20px; margin: 0 5px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-size: 13px; }
+        .btn-print { background: #4f46e5; color: white; border-color: #4f46e5; }
+        .btn-print:hover { background: #4338ca; }
+        .btn-close { background: #f3f4f6; color: #333; }
+        .btn-close:hover { background: #e5e7eb; }
+
+        @media print {
+            .actions { display: none; }
+            body { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="actions">
+        <button class="btn-print" onclick="window.print()">Print Report</button>
+        <button class="btn-close" onclick="window.close()">Close</button>
+    </div>
+
+    <div class="header">
+        <h1>Education Tracker</h1>
+        <p>Attendance Report</p>
+    </div>
+
+    <div class="filters">
+        <span><strong>Generated:</strong> {% now "F j, Y" %}</span>
+        {% if class_name %}<span><strong>Class:</strong> {{ class_name }}</span>{% endif %}
+        {% if date_from %}<span><strong>From:</strong> {{ date_from }}</span>{% endif %}
+        {% if date_to %}<span><strong>To:</strong> {{ date_to }}</span>{% endif %}
+        {% if not class_name and not date_from and not date_to %}<span>All classes, all dates</span>{% endif %}
+    </div>
+
+    {% if overall.total > 0 %}
+    <div class="summary">
+        <div class="summary-card">
+            <div class="label">Total Records</div>
+            <div class="value">{{ overall.total }}</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Present</div>
+            <div class="value green">{{ overall.present }}</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Absent</div>
+            <div class="value red">{{ overall.absent }}</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Attendance Rate</div>
+            <div class="value {% if overall.attendance_pct >= 80 %}green{% elif overall.attendance_pct >= 60 %}yellow{% else %}red{% endif %}">
+                {{ overall.attendance_pct }}%
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <table>
+        <thead>
+            <tr>
+                <th>Student</th>
+                <th>Class</th>
+                <th class="center">Present</th>
+                <th class="center">Absent</th>
+                <th class="center">Late</th>
+                <th class="center">Total</th>
+                <th class="center">Attendance %</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for stat in student_stats %}
+            <tr>
+                <td>{{ stat.student__first_name }} {{ stat.student__last_name }}</td>
+                <td>{{ stat.student__school_class__name }}</td>
+                <td class="center green">{{ stat.present }}</td>
+                <td class="center red">{{ stat.absent }}</td>
+                <td class="center yellow">{{ stat.late }}</td>
+                <td class="center">{{ stat.total }}</td>
+                <td class="center">
+                    <span class="badge {% if stat.attendance_pct >= 80 %}badge-green{% elif stat.attendance_pct >= 60 %}badge-yellow{% else %}badge-red{% endif %}">
+                        {{ stat.attendance_pct }}%
+                    </span>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 20px; color: #999;">No attendance data found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        Education Tracker &mdash; Report generated on {% now "F j, Y \a\t g:i A" %}
+    </div>
+</body>
+</html>

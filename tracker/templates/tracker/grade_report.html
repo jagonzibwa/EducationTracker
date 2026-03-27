@@ -36,6 +36,12 @@
         <div class="flex items-end gap-2">
             <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Filter</button>
             <a href="{% url 'grade_report' %}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">Clear</a>
+            {% if student_stats %}
+            <a href="{% url 'grade_report_print' %}?class_id={{ class_filter }}&term={{ term_filter }}&subject={{ subject_filter }}" target="_blank"
+                class="bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-900">
+                Print / Download Report
+            </a>
+            {% endif %}
         </div>
     </form>
 </div>

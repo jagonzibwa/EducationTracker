@@ -696,9 +696,78 @@ def report_view(request):
     })
 
 
-# 
+#
+# Printable Attendance Report View
+#
+@login_required
+@role_required(['admin', 'sysadmin', 'teacher'])
+def report_print_view(request):
+    """
+    Generate a printable attendance report that opens in a new window.
+    Uses the same filtering logic as report_view but renders a standalone
+    print-friendly template without the navbar/footer.
+    """
+    records = AttendanceRecord.objects.filter(corrections__isnull=True)
+
+    if request.user.profile.role == 'teacher':
+        records = records.filter(student__school_class__teacher=request.user)
+
+    class_filter = request.GET.get('class_id', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+
+    class_name = ''
+    if class_filter:
+        records = records.filter(student__school_class_id=class_filter)
+        try:
+            class_name = SchoolClass.objects.get(id=class_filter).name
+        except SchoolClass.DoesNotExist:
+            pass
+    if date_from:
+        records = records.filter(date__gte=date_from)
+    if date_to:
+        records = records.filter(date__lte=date_to)
+
+    student_stats = list(records.values(
+        'student__id', 'student__first_name', 'student__last_name',
+        'student__school_class__name'
+    ).annotate(
+        total=Count('id'),
+        present=Count('id', filter=Q(status='present')),
+        absent=Count('id', filter=Q(status='absent')),
+        late=Count('id', filter=Q(status='late')),
+    ).order_by('student__last_name', 'student__first_name'))
+
+    for stat in student_stats:
+        if stat['total'] > 0:
+            stat['attendance_pct'] = round(stat['present'] / stat['total'] * 100)
+        else:
+            stat['attendance_pct'] = 0
+
+    overall = records.aggregate(
+        total=Count('id'),
+        present=Count('id', filter=Q(status='present')),
+        absent=Count('id', filter=Q(status='absent')),
+        late=Count('id', filter=Q(status='late')),
+    )
+
+    if overall['total'] and overall['total'] > 0:
+        overall['attendance_pct'] = round(overall['present'] / overall['total'] * 100)
+    else:
+        overall['attendance_pct'] = 0
+
+    return render(request, 'tracker/report_print.html', {
+        'student_stats': student_stats,
+        'overall': overall,
+        'class_name': class_name,
+        'date_from': date_from,
+        'date_to': date_to,
+    })
+
+
+#
 # SMS Notification Log View (Admin Only)
-# 
+#
 @login_required
 @role_required(['admin', 'sysadmin'])
 def notification_log_view(request):
@@ -944,9 +1013,83 @@ def grade_report_view(request):
     })
 
 
-# 
+#
+# Printable Grade Report View
+#
+@login_required
+@role_required(['admin', 'sysadmin', 'teacher', 'parent'])
+def grade_report_print_view(request):
+    """
+    Generate a printable grade report that opens in a new window.
+    Uses the same filtering logic as grade_report_view but renders a standalone
+    print-friendly template without the navbar/footer.
+    """
+    from django.db.models import Avg, Max, Min
+
+    records = GradeRecord.objects.filter(corrections__isnull=True)
+
+    if request.user.profile.role == 'teacher':
+        records = records.filter(student__school_class__teacher=request.user)
+    elif request.user.profile.role == 'parent':
+        children_ids = request.user.profile.children.values_list('id', flat=True)
+        records = records.filter(student_id__in=children_ids)
+
+    class_filter = request.GET.get('class_id', '')
+    term_filter = request.GET.get('term', '')
+    subject_filter = request.GET.get('subject', '')
+
+    class_name = ''
+    if class_filter:
+        records = records.filter(student__school_class_id=class_filter)
+        try:
+            class_name = SchoolClass.objects.get(id=class_filter).name
+        except SchoolClass.DoesNotExist:
+            pass
+    if term_filter:
+        records = records.filter(term=term_filter)
+    if subject_filter:
+        records = records.filter(subject__icontains=subject_filter)
+
+    # Resolve term display name
+    term_name = ''
+    if term_filter:
+        term_dict = dict(GradeRecord.TERM_CHOICES)
+        term_name = term_dict.get(term_filter, term_filter)
+
+    student_stats = list(records.values(
+        'student__id', 'student__first_name', 'student__last_name',
+        'student__school_class__name'
+    ).annotate(
+        avg_score=Avg('score'),
+        max_score=Max('score'),
+        min_score=Min('score'),
+        total_grades=Count('id'),
+    ).order_by('student__last_name', 'student__first_name'))
+
+    for stat in student_stats:
+        stat['avg_score'] = round(float(stat['avg_score']), 1) if stat['avg_score'] else 0
+
+    overall = records.aggregate(
+        avg_score=Avg('score'),
+        total_grades=Count('id'),
+    )
+    if overall['avg_score']:
+        overall['avg_score'] = round(float(overall['avg_score']), 1)
+    else:
+        overall['avg_score'] = 0
+
+    return render(request, 'tracker/grade_report_print.html', {
+        'student_stats': student_stats,
+        'overall': overall,
+        'class_name': class_name,
+        'term_name': term_name,
+        'subject_filter': subject_filter,
+    })
+
+
+#
 # Parent Portal Views
-# 
+#
 @login_required
 @role_required(['parent'])
 def parent_attendance_view(request):
