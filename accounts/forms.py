@@ -18,12 +18,7 @@ TAILWIND_INPUT_CLASS = (
 
 
 class RegistrationForm(UserCreationForm):
-    """
-    Custom registration form for new user sign-up.
-
-    Only allows self-registration as Teacher or Administrator (per SRS FR 1.1, FR 1.2).
-    Parent and System Administrator accounts are created by admins via User Management.
-    """
+    """Self-registration form; only Teacher and Administrator roles are available."""
 
     ROLE_CHOICES = [
         ('teacher', 'Teacher'),

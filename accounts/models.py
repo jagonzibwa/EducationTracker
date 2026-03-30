@@ -1,28 +1,11 @@
-"""
-accounts/models.py - User Profile Model
-
-Defines the UserProfile model that extends Django's built-in User model
-with a role field. Uses a one-to-one relationship (profile pattern) rather
-than replacing the User model entirely. The profile is automatically created
-via a post_save signal (see signals.py) whenever a new User is created.
-"""
+"""accounts/models.py - UserProfile model extending Django's User with role and parent-child linking."""
 
 from django.db import models
 from django.contrib.auth.models import User
 
 
 class UserProfile(models.Model):
-    """
-    Extends Django's User model with role-based access control.
-
-    Each user has exactly one profile (OneToOne relationship) that stores
-    their role in the system. The role determines what pages they can access
-    and what actions they can perform throughout the application.
-
-    Attributes:
-        user: One-to-one link to Django's built-in User model
-        role: Either 'admin' (Administrator) or 'teacher' (Teacher)
-    """
+    """One-to-one extension of Django's User with a role field and optional parent-child M2M links."""
 
     # Define the available roles in the system
     ROLE_CHOICES = [
@@ -45,5 +28,4 @@ class UserProfile(models.Model):
     )
 
     def __str__(self):
-        """Return a human-readable string, e.g. 'admin1 (Administrator)'."""
         return f"{self.user.username} ({self.get_role_display()})"

@@ -1,29 +1,4 @@
-"""
-tracker/views.py - Core Application Views
-
-Contains all the view functions for the tracker app, implementing the main
-business logic for the Education Tracker system. Views are organized into
-five functional areas:
-
-    1. Dashboard        - Role-based landing page with attendance statistics
-    2. Class CRUD       - Create, read, update, delete school classes (admin only)
-    3. Student CRUD     - Manage student records (admin creates; teachers view)
-    4. Attendance       - Record, list, and edit attendance with audit trail
-    5. Reports          - Aggregate attendance statistics per student
-    6. Notifications    - View SMS notification log (admin only)
-
-Role-based access control:
-    - @login_required ensures user is authenticated
-    - @role_required(['admin', 'sysadmin']) restricts to admin-only views
-    - @role_required(['teacher', 'admin', 'sysadmin']) allows both roles
-    - Views without @role_required filter data by role in the queryset
-
-Audit Trail (SRS NFR-4):
-    When attendance is edited, the original record is preserved and a new
-    'correction' record is created that links back to the original via the
-    `corrects` ForeignKey. The `corrections__isnull=True` filter ensures
-    only the latest (uncorrected) record is shown in lists and reports.
-"""
+"""tracker/views.py - All views for the tracker app."""
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -42,13 +17,7 @@ from accounts.decorators import role_required
 # 
 @login_required
 def dashboard_view(request):
-    """
-    Render the main dashboard with role-appropriate content.
-
-    Admin/Sysadmin: system-wide metrics and management tools
-    Teacher: their own classes' metrics
-    Parent: their children's attendance and grade summaries
-    """
+    """Render the role-appropriate dashboard."""
     today = timezone.now().date()
     user = request.user
     role = user.profile.role
@@ -143,12 +112,7 @@ def dashboard_view(request):
 @login_required
 @role_required(['admin', 'sysadmin'])
 def class_list_view(request):
-    """
-    Display all school classes with their student counts.
-
-    Uses Django's `annotate()` to add a computed `student_count` field
-    to each class, avoiding N+1 queries. Only accessible by admins.
-    """
+    """List all school classes with student counts."""
     # Annotate each class with the number of enrolled students
     classes = SchoolClass.objects.annotate(student_count=Count('students'))
     return render(request, 'tracker/class_list.html', {'classes': classes})
@@ -157,15 +121,7 @@ def class_list_view(request):
 @login_required
 @role_required(['admin', 'sysadmin'])
 def class_create_view(request):
-    """
-    Handle the creation of a new school class.
-
-    GET:  Display an empty SchoolClassForm
-    POST: Validate and save the form, then redirect to the class list
-
-    The form's __init__ filters the teacher dropdown to only show users
-    with the 'teacher' role (see forms.py).
-    """
+    """Create a new school class."""
     if request.method == 'POST':
         form = SchoolClassForm(request.POST)
         if form.is_valid():
@@ -180,15 +136,7 @@ def class_create_view(request):
 @login_required
 @role_required(['admin', 'sysadmin'])
 def class_edit_view(request, pk):
-    """
-    Handle editing an existing school class.
-
-    Args:
-        pk: Primary key of the SchoolClass to edit
-
-    GET:  Display the form pre-filled with the class's current data
-    POST: Validate and save changes, then redirect to the class list
-    """
+    """Edit an existing school class."""
     school_class = get_object_or_404(SchoolClass, pk=pk)
     if request.method == 'POST':
         # Bind form to POST data and existing instance for update
@@ -206,15 +154,7 @@ def class_edit_view(request, pk):
 @login_required
 @role_required(['admin', 'sysadmin'])
 def class_delete_view(request, pk):
-    """
-    Handle deletion of a school class.
-
-    Args:
-        pk: Primary key of the SchoolClass to delete
-
-    Only processes DELETE on POST request (for CSRF protection).
-    Cascades to delete all students enrolled in the class.
-    """
+    """Delete a school class (cascades to enrolled students)."""
     school_class = get_object_or_404(SchoolClass, pk=pk)
     if request.method == 'POST':
         school_class.delete()
@@ -229,20 +169,7 @@ def class_delete_view(request, pk):
 # 
 @login_required
 def student_list_view(request):
-    """
-    Display a filterable list of students.
-
-    Role-based data access:
-        - Admin: sees ALL students across all classes
-        - Teacher: sees ONLY students in classes assigned to them
-
-    Supports two query parameters for filtering:
-        - search: Filter by student first or last name (case-insensitive)
-        - class_id: Filter by school class ID
-
-    Uses select_related('school_class') to avoid N+1 queries when
-    displaying the class name for each student.
-    """
+    """List students; teachers see only their class students."""
     if request.user.profile.role in ('admin', 'sysadmin'):
         # Admin sees all students
         students = Student.objects.select_related('school_class')
@@ -277,15 +204,7 @@ def student_list_view(request):
 @login_required
 @role_required(['admin', 'sysadmin'])
 def student_create_view(request):
-    """
-    Handle adding a new student to the system.
-
-    Only accessible by admins. Teachers can view students but cannot
-    create, edit, or delete them (as per SRS requirements).
-
-    GET:  Display an empty StudentForm
-    POST: Validate and save the form, then redirect to the student list
-    """
+    """Add a new student."""
     if request.method == 'POST':
         form = StudentForm(request.POST)
         if form.is_valid():
@@ -300,15 +219,7 @@ def student_create_view(request):
 @login_required
 @role_required(['admin', 'sysadmin'])
 def student_edit_view(request, pk):
-    """
-    Handle editing an existing student's details.
-
-    Args:
-        pk: Primary key of the Student to edit
-
-    GET:  Display the form pre-filled with the student's current data
-    POST: Validate and save changes, then redirect to the student list
-    """
+    """Edit an existing student's details."""
     student = get_object_or_404(Student, pk=pk)
     if request.method == 'POST':
         form = StudentForm(request.POST, instance=student)
@@ -324,15 +235,7 @@ def student_edit_view(request, pk):
 @login_required
 @role_required(['admin', 'sysadmin'])
 def student_delete_view(request, pk):
-    """
-    Handle deletion of a student record.
-
-    Args:
-        pk: Primary key of the Student to delete
-
-    Only processes on POST (CSRF protection). Cascading deletes will
-    also remove the student's attendance records and SMS notifications.
-    """
+    """Delete a student and their associated records."""
     student = get_object_or_404(Student, pk=pk)
     if request.method == 'POST':
         student.delete()
@@ -347,30 +250,7 @@ def student_delete_view(request, pk):
 @login_required
 @role_required(['teacher', 'admin', 'sysadmin'])
 def attendance_record_view(request):
-    """
-    Handle bulk attendance recording for an entire class at once.
-
-    This is the most complex view in the application. It implements a
-    two-step flow:
-
-    Step 1 (GET): Teacher selects a class and date
-        - Displays a dropdown of available classes
-        - If class_id is provided as a query parameter, loads all students
-          in that class and shows radio buttons (present/absent/late) for each
-        - Pre-fills radio buttons if attendance was already recorded that day
-
-    Step 2 (POST): Teacher submits the attendance form
-        - Iterates through each student in the selected class
-        - Creates an AttendanceRecord for each student
-        - If a record already exists for that student/date, creates a
-          correction record instead (audit trail per SRS NFR-4)
-        - Triggers a mock SMS notification for each absent student
-        - Redirects to the attendance list with a summary message
-
-    Role-based class filtering:
-        - Teachers only see classes assigned to them
-        - Admins see all classes
-    """
+    """Record attendance for a full class. Creates correction records if re-submitted for the same date."""
     user = request.user
 
     # Determine which classes to show based on role
@@ -477,26 +357,7 @@ def attendance_record_view(request):
 # 
 @login_required
 def attendance_list_view(request):
-    """
-    Display a filterable log of all attendance records.
-
-    Role-based data access:
-        - Admin: sees ALL attendance records
-        - Teacher: sees ONLY records for students in their assigned classes
-
-    Only shows the latest (uncorrected) version of each record by filtering
-    with `corrections__isnull=True`. Corrected records are hidden but
-    preserved in the database for audit purposes.
-
-    Supports filtering by:
-        - class_id:  Filter by school class
-        - date_from: Start date (inclusive)
-        - date_to:   End date (inclusive)
-        - status:    Filter by present/absent/late
-
-    Results are capped at 200 records to prevent excessive page load times.
-    Uses select_related() to join student, class, and user tables in one query.
-    """
+    """Filterable list of attendance records. Teachers see only their class records."""
     if request.user.profile.role in ('admin', 'sysadmin'):
         # Admin sees all uncorrected records
         records = AttendanceRecord.objects.filter(corrections__isnull=True)
@@ -543,26 +404,7 @@ def attendance_list_view(request):
 @login_required
 @role_required(['teacher', 'admin', 'sysadmin'])
 def attendance_edit_view(request, pk):
-    """
-    Handle editing (correcting) an existing attendance record.
-
-    IMPORTANT: This does NOT modify the original record. Instead, it creates
-    a new 'correction' record that supersedes the original. This implements
-    the immutable audit trail required by SRS NFR-4.
-
-    Args:
-        pk: Primary key of the original AttendanceRecord to correct
-
-    GET:  Display the current record with a dropdown to select the new status
-    POST: Create a correction record and redirect to the attendance list
-
-    The correction record:
-        - Links to the original via `corrects` ForeignKey
-        - Has `is_correction=True`
-        - Records the current user as `recorded_by` (who made the change)
-
-    If the new status is 'absent', a mock SMS is sent to the parent.
-    """
+    """Correct an attendance record by creating a new record linked to the original."""
     original_record = get_object_or_404(AttendanceRecord, pk=pk)
 
     if request.method == 'POST':
@@ -597,35 +439,7 @@ def attendance_edit_view(request, pk):
 # 
 @login_required
 def report_view(request):
-    """
-    Generate and display attendance statistics and reports.
-
-    Provides two levels of reporting:
-
-    1. Per-Student Summary:
-        - Total attendance records per student
-        - Breakdown of present, absent, and late counts
-        - Attendance percentage (present / total * 100)
-        - Uses Django ORM's annotate() with Count + Q for conditional aggregation
-
-    2. Overall Summary:
-        - Total records across all (filtered) students
-        - Aggregate present/absent/late counts
-        - Overall attendance percentage
-        - Uses Django ORM's aggregate() for system-wide totals
-
-    Role-based filtering:
-        - Admin: sees all students' data
-        - Teacher: sees only their assigned students' data
-
-    Supports filtering by:
-        - class_id:  Filter by school class
-        - date_from: Start date (inclusive)
-        - date_to:   End date (inclusive)
-
-    Only includes uncorrected records (corrections__isnull=True) to ensure
-    accurate statistics that reflect the most current attendance status.
-    """
+    """Attendance summary report with per-student stats and overall totals."""
     # Start with all uncorrected attendance records
     records = AttendanceRecord.objects.filter(corrections__isnull=True)
 
@@ -716,11 +530,7 @@ def report_view(request):
 @login_required
 @role_required(['admin', 'sysadmin', 'teacher'])
 def report_print_view(request):
-    """
-    Generate a printable attendance report that opens in a new window.
-    Uses the same filtering logic as report_view but renders a standalone
-    print-friendly template without the navbar/footer.
-    """
+    """Print-friendly version of the attendance report."""
     records = AttendanceRecord.objects.filter(corrections__isnull=True)
 
     if request.user.profile.role == 'teacher':
@@ -788,18 +598,7 @@ def report_print_view(request):
 @login_required
 @role_required(['admin', 'sysadmin'])
 def notification_log_view(request):
-    """
-    Display the SMS notification log for admin review.
-
-    Shows the most recent 100 SMS notifications (simulated), including:
-        - Student name and class
-        - Parent phone number
-        - Message content
-        - Timestamp and delivery status
-
-    Uses select_related() to join student and class tables in a single
-    query for efficient rendering. Only accessible by admins.
-    """
+    """Display the SMS notification log (last 100 entries)."""
     # Fetch recent notifications with related student/class data pre-loaded
     notifications = SMSNotification.objects.select_related('student', 'student__school_class')[:100]
     return render(request, 'tracker/notification_log.html', {'notifications': notifications})
@@ -1051,11 +850,7 @@ def grade_report_view(request):
 @login_required
 @role_required(['admin', 'sysadmin', 'teacher', 'parent'])
 def grade_report_print_view(request):
-    """
-    Generate a printable grade report that opens in a new window.
-    Uses the same filtering logic as grade_report_view but renders a standalone
-    print-friendly template without the navbar/footer.
-    """
+    """Print-friendly version of the grade report."""
     from django.db.models import Avg, Max, Min
 
     records = GradeRecord.objects.filter(corrections__isnull=True)

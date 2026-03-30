@@ -1,38 +1,11 @@
-"""
-tracker/models.py - Core Data Models
-
-Defines the five main database models for the Education Tracker system:
-    1. SchoolClass - Represents a class/grade (e.g., 'Primary 5A')
-    2. Student - A student enrolled in a specific class
-    3. AttendanceRecord - A daily attendance entry for one student
-    4. GradeRecord - An immutable grade entry for one student
-    5. SMSNotification - A log of SMS messages sent to parents
-
-Entity Relationships:
-    User 1---* SchoolClass (teacher assignment)
-    SchoolClass 1---* Student (enrollment)
-    Student 1---* AttendanceRecord (daily attendance)
-    Student 1---* GradeRecord (grades)
-    Student 1---* SMSNotification (absence alerts)
-    AttendanceRecord ---? AttendanceRecord (self-referential for corrections/audit trail)
-    GradeRecord ---? GradeRecord (self-referential for corrections/audit trail)
-"""
+"""tracker/models.py - Database models for schools, students, attendance, grades, and SMS logs."""
 
 from django.db import models
 from django.contrib.auth.models import User
 
 
 class SchoolClass(models.Model):
-    """
-    Represents a school class or grade, e.g. 'Primary 5A' or 'Grade 6B'.
-
-    Each class can optionally be assigned to a teacher. If the teacher
-    is deleted, the class remains but the teacher field becomes null.
-
-    Attributes:
-        name: Unique name of the class (e.g., 'Primary 5A')
-        teacher: Optional FK to the User who teaches this class
-    """
+    """A school class with an optional assigned teacher."""
     # Class name must be unique across the school
     name = models.CharField(max_length=100, unique=True)
 
@@ -48,24 +21,11 @@ class SchoolClass(models.Model):
         ordering = ['name']                     # Sort alphabetically by default
 
     def __str__(self):
-        """Return the class name, e.g. 'Primary 5A'."""
         return self.name
 
 
 class Student(models.Model):
-    """
-    Represents a student enrolled in a specific school class.
-
-    Stores the student's personal info and their parent/guardian contact
-    details for SMS notifications when the student is absent.
-
-    Attributes:
-        first_name: Student's first name
-        last_name: Student's last name
-        school_class: FK to the SchoolClass the student belongs to
-        parent_name: Name of the student's parent/guardian
-        parent_phone: Phone number for SMS notifications (Uganda format)
-    """
+    """A student enrolled in a school class, with parent contact details for SMS."""
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
 
@@ -85,30 +45,16 @@ class Student(models.Model):
         unique_together = ['first_name', 'last_name', 'school_class']
 
     def __str__(self):
-        """Return the student's full name, e.g. 'Amina Nakamya'."""
         return f"{self.first_name} {self.last_name}"
 
 
 class AttendanceRecord(models.Model):
     """
-    Records a single attendance entry for one student on one date.
+    A daily attendance entry for one student.
 
-    Supports an immutable audit trail: when attendance is edited, a new
-    correction record is created that links back to the original via the
-    'corrects' field. The original record is never modified or deleted.
-
-    To get the "effective" (latest) record for a student on a date,
-    filter for records where corrections__isnull=True (i.e., no newer
-    correction exists pointing to this record).
-
-    Attributes:
-        student: FK to the Student this record is for
-        date: The date of the attendance record
-        status: 'present', 'absent', or 'late'
-        recorded_by: FK to the User (teacher) who recorded this
-        created_at: Timestamp when this record was created
-        is_correction: True if this record corrects a previous one
-        corrects: FK to the original record this corrects (self-referential)
+    Edits create a new correction record linked via `corrects` rather than
+    modifying the original. Filter `corrections__isnull=True` to get the
+    current effective record.
     """
     # Possible attendance statuses
     STATUS_CHOICES = [
@@ -151,28 +97,11 @@ class AttendanceRecord(models.Model):
         ordering = ['-date', 'student__last_name']  # Newest first, then by name
 
     def __str__(self):
-        """Return a string like 'Amina Nakamya - 2026-03-04 - present'."""
         return f"{self.student} - {self.date} - {self.status}"
 
 
 class GradeRecord(models.Model):
-    """
-    Records a grade entry for one student in one subject.
-
-    Supports an immutable audit trail identical to AttendanceRecord: when a
-    grade is edited, a new correction record is created that links back to
-    the original via the 'corrects' field. The original is never modified.
-
-    Attributes:
-        student: FK to the Student this grade is for
-        subject: The subject name (e.g., 'Mathematics')
-        score: Numeric score (0-100)
-        term: Academic term (Term 1, Term 2, Term 3)
-        recorded_by: FK to the User who recorded this grade
-        created_at: Timestamp when this record was created
-        is_correction: True if this record corrects a previous one
-        corrects: FK to the original record this corrects
-    """
+    """Grade entry for one student in one subject; uses the same immutable audit trail as AttendanceRecord."""
     TERM_CHOICES = [
         ('term1', 'Term 1'),
         ('term2', 'Term 2'),
@@ -205,19 +134,7 @@ class GradeRecord(models.Model):
 
 
 class SMSNotification(models.Model):
-    """
-    Logs SMS notifications sent to parents.
-
-    When Africa's Talking API credentials are configured, real SMS messages
-    are sent. Otherwise, notifications are logged with 'simulated' status.
-
-    Attributes:
-        student: FK to the Student whose parent is being notified
-        parent_phone: The phone number the SMS was sent to
-        message: The full text of the SMS message
-        sent_at: Timestamp when the notification was created
-        status: 'sent', 'simulated', or 'failed'
-    """
+    """Logs SMS messages sent to parents; status is 'sent', 'simulated', or 'failed'."""
     student = models.ForeignKey(
         Student, on_delete=models.CASCADE, related_name='sms_notifications'
     )

@@ -1,19 +1,4 @@
-"""
-accounts/decorators.py - Role-Based Access Control Decorators
-
-Provides custom decorators for enforcing role-based permissions on views.
-Used alongside Django's @login_required to restrict page access based on
-the user's role (admin or teacher).
-
-Usage:
-    @login_required
-    @role_required(['admin'])
-    def admin_only_view(request): ...
-
-    @login_required
-    @admin_required
-    def another_admin_view(request): ...
-"""
+"""accounts/decorators.py - Role-based access control decorators."""
 
 from django.shortcuts import redirect
 from django.contrib import messages
@@ -21,19 +6,7 @@ from functools import wraps
 
 
 def role_required(allowed_roles):
-    """
-    Decorator factory that restricts view access to users with specific roles.
-
-    Checks if the logged-in user's profile role is in the allowed_roles list.
-    If not, shows an error message and redirects to the dashboard.
-
-    Args:
-        allowed_roles (list): Role strings that are permitted,
-                              e.g. ['admin'], ['teacher'], or ['admin', 'teacher']
-
-    Returns:
-        A decorator function that wraps the view.
-    """
+    """Restrict a view to users whose profile role is in allowed_roles; redirects others to dashboard."""
     def decorator(view_func):
         @wraps(view_func)  # Preserves the original function's name and docstring
         def wrapper(request, *args, **kwargs):

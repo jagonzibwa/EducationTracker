@@ -1,13 +1,4 @@
-"""
-accounts/views.py - Authentication Views
-
-Handles user registration and profile display.
-Login and logout are handled by Django's built-in views (configured in urls.py).
-
-Views:
-    register_view: Handles new user registration (GET shows form, POST creates user)
-    profile_view:  Displays the logged-in user's profile information
-"""
+"""accounts/views.py - Registration, profile, and admin user management views."""
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages

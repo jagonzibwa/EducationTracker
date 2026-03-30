@@ -1,20 +1,4 @@
-"""
-Django settings for the Education Tracker project.
-
-This file contains all configuration settings for the Django application,
-including database setup, installed apps, authentication, session management,
-and static file handling.
-
-Key configuration choices:
-    - SQLite database (lightweight, no separate server needed for academic use)
-    - Tailwind CSS via CDN (no build tools required)
-    - Crispy Forms with Bootstrap5 template pack for styled form rendering
-    - 30-minute session timeout for security (SRS NFR-1)
-    - Africa/Kampala timezone (target deployment region: Uganda)
-
-For more information on Django settings, see:
-    https://docs.djangoproject.com/en/5.2/ref/settings/
-"""
+"""Django settings for the Education Tracker project."""
 
 import os
 import dj_database_url
