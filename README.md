@@ -1,6 +1,9 @@
 # Education Tracker
 
 A web-based school management system built with Django for tracking student attendance, grades, and parent communication via SMS notifications.
+Demo Video: https://youtu.be/LMBvQfgULO0
+Deployed Link: https://educationtracker.onrender.com/
+
 
 ## Features
 
